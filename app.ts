@@ -3,6 +3,7 @@ import createHttpError from 'http-errors'
 import path from 'path'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
+import cors from 'cors'
 
 const app = express()
 
@@ -11,10 +12,15 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
+app.use(cors())
 
-app.get('/', (req: Request, res: Response) => {
-    res.send('Khoicute')
+app.route('/').get((req, res) => {
+    res.send('Hello World')
 })
+
+// import route from routes/auth and use it
+import authRoute from './routes/auth'
+app.use('/auth', authRoute)
 
 // error handler
 app.use((err: any, req: Request, res: Response, next: any) => {

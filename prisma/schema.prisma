@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id        String      @id @default(cuid())
+  name      String
+  phone     String      @unique
+  password  String
+  sent      Email[]     @relation("sender")
+  Recipient Recipient[]
+  Label     Label[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Email {
+  id         String       @id @default(cuid())
+  sender     Account      @relation("sender", fields: [senderId], references: [id])
+  senderId   String
+  subject    String
+  body       String
+  draft      Boolean
+  createdAt  DateTime     @default(now())
+  updateAt   DateTime     @updatedAt
+  sentAt     DateTime?    @default(now())
+  Recipient  Recipient[]
+  Attachment Attachment[]
+}
+
+model Label {
+  id        String      @id @default(cuid())
+  name      String
+  color     String
+  userId    String
+  user      Account     @relation(fields: [userId], references: [id])
+  recipient Recipient[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Recipient {
+  email       Email         @relation(fields: [emailId], references: [id])
+  emailId     String
+  recipient   Account       @relation(fields: [userId], references: [id])
+  recipientId String
+  type        RecipientType @default(to)
+  userId      String
+  star        Boolean
+  deleted     Boolean
+  Label       Label?        @relation(fields: [labelId], references: [id])
+  labelId     String?
+
+  @@id([emailId, recipientId])
+}
+
+model Attachment {
+  id      String @id @default(cuid())
+  email   Email  @relation(fields: [emailId], references: [id])
+  emailId String
+  name    String
+  size    Int
+  type    String
+  path    String
+}
+
+enum RecipientType {
+  to
+  cc
+  bcc
+}
