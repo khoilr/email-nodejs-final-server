@@ -13,6 +13,7 @@ datasource db {
 model Account {
   id        String      @id @default(cuid())
   name      String
+  avatar    String?
   phone     String      @unique
   password  String
   sent      Email[]     @relation("sender")
