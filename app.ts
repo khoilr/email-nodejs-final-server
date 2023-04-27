@@ -32,13 +32,13 @@ app.use(cors())
 
 // Initialize Firebase
 const firebaseConfig = {
-    apiKey: 'AIzaSyApy74WSSLZF-PQZvJrLwsImWoZMC7h0Bc',
-    authDomain: 'email-nodejs-final.firebaseapp.com',
-    projectId: 'email-nodejs-final',
-    storageBucket: 'email-nodejs-final.appspot.com',
-    messagingSenderId: '150154854268',
-    appId: '1:150154854268:web:448975ec0742c94222eef9',
-    measurementId: 'G-3LYP1BJ4PP',
+    apiKey: process.env.FIREBASE_API_KEY ?? '',
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN ?? '',
+    projectId: process.env.FIREBASE_PROJECT_ID ?? '',
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET ?? '',
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID ?? '',
+    appId: process.env.FIREBASE_APP_ID ?? '',
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID ?? '',
 }
 const firebaseApp = initializeApp(firebaseConfig)
 

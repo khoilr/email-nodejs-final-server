@@ -4,20 +4,8 @@ const prisma = new PrismaClient()
 import bcrypt from 'bcrypt'
 import { body, validationResult } from 'express-validator'
 import jwt, { Secret } from 'jsonwebtoken'
-
 import multer, { memoryStorage } from 'multer'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
-
-// // Initialize firebase app with your credential
-// const firebaseApp = initializeApp({
-//     apiKey: 'AIzaSyApy74WSSLZF-PQZvJrLwsImWoZMC7h0Bc',
-//     authDomain: 'email-nodejs-final.firebaseapp.com',
-//     projectId: 'email-nodejs-final',
-//     storageBucket: 'email-nodejs-final.appspot.com',
-//     messagingSenderId: '150154854268',
-//     appId: '1:150154854268:web:448975ec0742c94222eef9',
-//     measurementId: 'G-3LYP1BJ4PP',
-// })
 
 // Get a reference to the firebase storage service
 const storage = getStorage()
