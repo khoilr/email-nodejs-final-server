@@ -27,9 +27,9 @@ model Account {
 
 model Blocking {
   id         String   @id @default(cuid())
-  blocker    Account  @relation("blocker", fields: [blockerId], references: [id])
+  blocker    Account  @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
   blockerId  String
-  blocking   Account  @relation("blocking", fields: [blockingId], references: [id])
+  blocking   Account  @relation("blocking", fields: [blockingId], references: [id], onDelete: Cascade)
   blockingId String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

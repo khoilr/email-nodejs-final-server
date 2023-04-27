@@ -43,40 +43,111 @@ const router = express.Router()
 const saltRounds = 10
 
 // handle get account
-router.get('/', (req, res) => {})
+router
+    .route('/')
+    .get((req, res) => {})
+    .post(validatePhoneNumber, (req, res) => {
+        // Validate request body
+        const errors = validationResult(req)
+        if (!errors.isEmpty()) {
+            // Return a bad request status with the errors
+            return res.status(400).json({ errors: errors.array() })
+        }
 
-// handle registry account
-router.post('/', validatePhoneNumber, (req, res) => {
-    // Validate request body
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-        // Return a bad request status with the errors
-        return res.status(400).json({ errors: errors.array() })
-    }
+        // get phone number, password, name from request body
+        const { phone, password, name } = req.body
 
-    // get phone number, password, name from request body
-    const { phone, password, name } = req.body
-
-    // hash password
-    bcrypt.hash(password, saltRounds, async function (err, hash) {
-        // Store hash in your password DB.
-        try {
-            const account = await prisma.account.create({
-                data: {
-                    phone: phone,
-                    password: hash,
-                    name: name,
-                },
-            })
-            res.status(201).json(account)
-        } catch (error: any) {
-            if (error.code === 'P2002')
-                res.status(409).json({
-                    message: 'Phone number already exists',
+        // hash password
+        bcrypt.hash(password, saltRounds, async function (err, hash) {
+            // Store hash in your password DB.
+            try {
+                const account = await prisma.account.create({
+                    data: {
+                        phone: phone,
+                        password: hash,
+                        name: name,
+                    },
                 })
+                res.status(201).json(account)
+            } catch (error: any) {
+                if (error.code === 'P2002')
+                    res.status(409).json({
+                        message: 'Phone number already exists',
+                    })
+            }
+        })
+    })
+    .patch(upload.single('image'), async (req, res) => {
+        const file = req.file
+
+        console.log(file?.originalname)
+
+        const { id, phone, password, name } = req.body
+
+        if (file) {
+            // concat current timestamp to file name
+            const fileName = `${Date.now()}-${file.originalname}`
+            const fileRef = ref(storage, 'images/' + fileName)
+            const snapshot = await uploadBytes(fileRef, file.buffer, {
+                contentType: file.mimetype,
+            })
+            const url = await getDownloadURL(snapshot.ref)
+
+            if (password) {
+                // hash password and update
+                bcrypt.hash(password, saltRounds, async function (err, hash) {
+                    // Store hash in your password DB.
+                    try {
+                        const account = await prisma.account.update({
+                            where: {
+                                id: id,
+                            },
+                            data: {
+                                phone: phone,
+                                password: hash,
+                                name: name,
+                                avatar: url,
+                            },
+                        })
+                        res.status(202).json(account)
+                    } catch (error: any) {
+                        if (error.code === 'P2002')
+                            res.status(409).json({
+                                message: 'Phone number already exists',
+                            })
+                    }
+                })
+            } else {
+                const account = await prisma.account.update({
+                    where: {
+                        id: id,
+                    },
+                    data: {
+                        phone: phone,
+                        name: name,
+                        avatar: url,
+                    },
+                })
+                res.status(202).json(account)
+            }
         }
     })
-})
+    .delete((req, res) => {
+        const userId = req.body.id
+
+        prisma.account
+            .delete({
+                where: {
+                    id: userId,
+                },
+            })
+            .then((account) => {
+                res.status(204).json(account)
+            })
+            .catch((error) => {
+                res.status(404).json({ message: 'Account not found' })
+            })
+    })
 
 // handle login
 router.post('/login', validatePhoneNumber, async (req, res) => {
@@ -142,40 +213,90 @@ router.post('/logout', (req, res) => {
         .json({ message: 'Logout successfully' })
 })
 
+// TODO: implement this feature
 // handle forgot password, user submit form with phone number
-router.post('/forgot-password', (req, res) => {
-    res.send('forgot password')
-})
+router
+    .route('/reset-password')
+    .post((req, res) => {
+        // get user phone and create a token to let user reset password
+        const { phone } = req.body
 
-// handle reset password, user submit form that reset password with token sent from forgot password
-router.patch('/reset-password', (req, res) => {
-    res.send('reset password')
-})
+        // find account by phone number
+        prisma.account
+            .findUnique({
+                where: {
+                    phone: phone,
+                },
 
-// handle update account, user submit form that update account
-router.patch('/', upload.single('image'), async (req, res) => {
-    const file = req.file
+                select: {
+                    id: true,
+                },
+            })
+            .then((account) => {
+                // create a token with account id
+                const token = jwt.sign(
+                    { id: account?.id },
+                    process.env.JWT_SECRET as Secret,
+                    { expiresIn: '1 day' }
+                )
 
-    console.log(file?.originalname)
+                // send token to user phone number
+                // const client = require('twilio')(
+                //     process.env.TWILIO_ACCOUNT_SID,
+                //     process.env.TWILIO_AUTH_TOKEN
+                // )
 
-    const { phone, password, name } = req.body
+                // client.messages
+                //     .create({
+                //         body: `Your reset password token is ${token}`,
+                //         from: process.env.TWILIO_PHONE_NUMBER,
+                //         to: phone,
+                //     })
+                //     .then((message) => console.log(message.sid))
 
-    if (file) {
-        // concat current timestamp to file name
-        const fileName = `${Date.now()}-${file.originalname}`
-        const fileRef = ref(storage, 'images/' + fileName)
-        const snapshot = await uploadBytes(fileRef, file.buffer, {
-            contentType: file.mimetype,
-        })
-        const url = await getDownloadURL(snapshot.ref)
-    }
+                res.status(200).json({ message: 'Reset password token sent' })
+            })
+            .catch((error) => {
+                res.status(404).json({ message: 'Account not found' })
+            })
+    })
+    .patch((req, res) => {
+        // get token and new password from request body
+        const { token, password } = req.body
 
-    res.send('hihi')
-})
+        // verify token
+        jwt.verify(
+            token,
+            process.env.JWT_SECRET as Secret,
 
-// handle delete account
-router.delete('/', (req, res) => {
-    // res.send('delete account')
-})
+            async (err: any, decoded: any) => {
+                if (err) {
+                    res.status(401).json({ message: 'Invalid token' })
+                    return
+                }
+
+                // hash password
+                bcrypt.hash(password, saltRounds, async function (err, hash) {
+                    // Store hash in your password DB.
+                    try {
+                        const account = await prisma.account.update({
+                            where: {
+                                id: decoded.id,
+                            },
+                            data: {
+                                password: hash,
+                            },
+                        })
+                        res.status(202).json(account)
+                    } catch (error: any) {
+                        if (error.code === 'P2002')
+                            res.status(409).json({
+                                message: 'Phone number already exists',
+                            })
+                    }
+                })
+            }
+        )
+    })
 
 export default router
