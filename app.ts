@@ -22,6 +22,10 @@ app.route('/').get((req, res) => {
 import authRoute from './routes/auth'
 app.use('/auth', authRoute)
 
+// import route from routes/auth and use it
+import sendEmail from './routes/Email'
+app.use('/send', sendEmail)
+
 // error handler
 app.use((err: any, req: Request, res: Response, next: any) => {
     res.locals.message = err.message
