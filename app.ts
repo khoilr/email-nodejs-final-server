@@ -28,7 +28,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
-app.use(cors())
+app.use(cors({ origin: true, credentials: true }))
 
 // Initialize Firebase
 const firebaseConfig = {
@@ -55,6 +55,10 @@ import messageRoute from './routes/message'
 app.use('/auth', authRoute)
 app.use('/message', messageRoute)
 
+// import route from routes/auth and use it
+import sendEmail from './routes/Email'
+app.use('/send', sendEmail)
+
 // error handler
 app.use((err: any, req: Request, res: Response, next: any) => {
     res.locals.message = err.message
@@ -64,6 +68,6 @@ app.use((err: any, req: Request, res: Response, next: any) => {
     res.send('error')
 })
 
-const server = app.listen(3000, () => {
-    console.log('Server is running at http://localhost:3000')
+const server = app.listen(3300, () => {
+    console.log('Server is running at http://localhost:3300')
 })

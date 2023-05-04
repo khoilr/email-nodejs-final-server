@@ -17,7 +17,7 @@ model Account {
   phone     String      @unique
   password  String
   sent      Email[]     @relation("sender")
-  Recipient Recipient[]
+  Recipient Recipient[] @relation("recipient")
   Label     Label[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -46,7 +46,7 @@ model Email {
   updateAt   DateTime     @updatedAt
   sentAt     DateTime?    @default(now())
   Recipient  Recipient[]
-  Attachment Attachment[]
+  Attachment Attachment[] @relation("Attachment")
 }
 
 model Label {
@@ -63,10 +63,9 @@ model Label {
 model Recipient {
   email       Email         @relation(fields: [emailId], references: [id])
   emailId     String
-  recipient   Account       @relation(fields: [accountId], references: [id])
+  recipient   Account       @relation("recipient", fields: [recipientId], references: [id])
   recipientId String
   type        RecipientType @default(to)
-  accountId   String
   star        Boolean
   deleted     Boolean
   Label       Label?        @relation(fields: [labelId], references: [id])
@@ -77,7 +76,7 @@ model Recipient {
 
 model Attachment {
   id      String @id @default(cuid())
-  email   Email  @relation(fields: [emailId], references: [id])
+  email   Email  @relation("Attachment", fields: [emailId], references: [id])
   emailId String
   name    String
   size    Int
