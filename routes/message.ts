@@ -1,10 +1,9 @@
 import { Router } from 'express'
-import { isAuthorization } from '../middleware/auth'
 
 const router = Router()
 
 // handle get messages sent to account
-router.get('/', isAuthorization, (req, res) => {
+router.get('/', (req, res) => {
     res.send('get messages')
 })
 
