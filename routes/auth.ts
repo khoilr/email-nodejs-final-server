@@ -33,39 +33,7 @@ const saltRounds = 10
 // handle get account
 router
     .route('/')
-    .get((req, res) => {
-        const bearerToken = req.headers.authorization
-        const token = bearerToken?.split(' ')[1]
-
-        token
-            ? jwt.verify(
-                  token,
-                  process.env.JWT_SECRET as Secret,
-                  async (err, decoded) => {
-                      if (err) {
-                          res.sendStatus(403)
-                          return
-                      }
-
-                      console.log(decoded)
-
-                      const account = await prisma.account.findUnique({
-                          where: {
-                              id: (decoded as any).id,
-                          },
-                          select: {
-                              id: true,
-                              phone: true,
-                              name: true,
-                              avatar: true,
-                          },
-                      })
-                      res.status(200).json(account)
-                  }
-              )
-            : res.sendStatus(401)
-    })
-    // registry
+    .get((req, res) => {})
     .post(validatePhoneNumber, (req, res) => {
         // Validate request body
         const errors = validationResult(req)
@@ -170,7 +138,7 @@ router
     })
 
 // handle login
-router.post('/sign-in', validatePhoneNumber, async (req, res) => {
+router.post('/login', validatePhoneNumber, async (req, res) => {
     // Validate request body
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
@@ -213,16 +181,11 @@ router.post('/sign-in', validatePhoneNumber, async (req, res) => {
                       { expiresIn: '30 days' },
                       (err, token) => {
                           if (!err)
-                              res.status(200)
-                                  .cookie('token', token, {
-                                      httpOnly: true,
-                                      secure: true,
-                                      sameSite: 'none',
+                              res.header('Authorization', `Bearer ${token}`)
+                                  .status(200)
+                                  .json({
+                                      message: 'Login successfully',
                                   })
-                                  .json({ message: 'Login successfully' })
-                          //   .json({
-                          //       message: 'Login successfully',
-                          //   })
                           else console.log(err.stack)
                       }
                   )

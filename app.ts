@@ -50,10 +50,14 @@ isSupported().then((isSupported) => {
 })
 
 // routes
-import authRoute from './routes/auth'
+import accountRoute from './routes/account'
 import messageRoute from './routes/message'
-app.use('/auth', authRoute)
+import signinRoute from './routes/signin'
+import forgotPasswordRoute from './routes/forgotPassword'
+app.use('/auth', accountRoute)
 app.use('/message', messageRoute)
+app.use('/signin', signinRoute)
+app.use('/forgot-password', forgotPasswordRoute)
 
 // import route from routes/auth and use it
 import sendEmail from './routes/Email'
