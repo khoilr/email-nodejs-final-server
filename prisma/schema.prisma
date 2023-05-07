@@ -11,18 +11,23 @@ datasource db {
 }
 
 model Account {
-  id        String      @id @default(cuid())
-  name      String
-  avatar    String?
-  phone     String      @unique
-  password  String
-  sent      Email[]     @relation("sender")
-  Recipient Recipient[] @relation("recipient")
-  Label     Label[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  Blocking  Blocking[]  @relation("blocker")
-  Blocked   Blocking[]  @relation("blocking")
+  id          String      @id @default(cuid())
+  name        String
+  avatar      String?     @db.Text
+  phone       String      @unique
+  password    String
+  sent        Email[]     @relation("sender")
+  Recipient   Recipient[] @relation("recipient")
+  Label       Label[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  Blocking    Blocking[]  @relation("blocker")
+  Blocked     Blocking[]  @relation("blocking")
+  verified    Boolean     @default(false)
+  emailId     String?
+  EmailSendTo Email[]     @relation("SendTo")
+  EmailCC     Email[]     @relation("CC")
+  EmailBCC    Email[]     @relation("BCC")
 }
 
 model Blocking {
@@ -39,14 +44,20 @@ model Email {
   id         String       @id @default(cuid())
   sender     Account      @relation("sender", fields: [senderId], references: [id])
   senderId   String
-  subject    String
-  body       String
+  subject    String?
+  body       String?      @db.Text
   draft      Boolean
   createdAt  DateTime     @default(now())
   updateAt   DateTime     @updatedAt
   sentAt     DateTime?    @default(now())
-  Recipient  Recipient[]
+  SendTo     Account[]    @relation("SendTo")
+  CC         Account[]    @relation("CC")
+  BCC        Account[]    @relation("BCC")
   Attachment Attachment[] @relation("Attachment")
+  Recipient  Recipient[]
+  ReplyTo    Email[]      @relation("ReplyTo")
+  Email      Email?       @relation("ReplyTo", fields: [emailId], references: [id])
+  emailId    String?
 }
 
 model Label {
@@ -61,17 +72,17 @@ model Label {
 }
 
 model Recipient {
+  id          String        @id @default(cuid())
   email       Email         @relation(fields: [emailId], references: [id])
   emailId     String
   recipient   Account       @relation("recipient", fields: [recipientId], references: [id])
   recipientId String
-  type        RecipientType @default(to)
+  type        RecipientType
   star        Boolean
   deleted     Boolean
   Label       Label?        @relation(fields: [labelId], references: [id])
   labelId     String?
-
-  @@id([emailId, recipientId])
+  receivedAt  DateTime      @default(now())
 }
 
 model Attachment {
@@ -81,7 +92,7 @@ model Attachment {
   name    String
   size    Int
   type    String
-  path    String
+  url     String @db.Text
 }
 
 enum RecipientType {

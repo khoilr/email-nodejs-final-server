@@ -3,9 +3,12 @@ import bcrypt from 'bcrypt'
 import express from 'express'
 import { validationResult } from 'express-validator'
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage'
-import jwt, { Secret } from 'jsonwebtoken'
+import jwt, { Secret, VerifyErrors } from 'jsonwebtoken'
 import multer, { memoryStorage } from 'multer'
-import { validatePhoneNumber } from '../middleware/validations'
+import {
+    validatePassword,
+    validatePhoneNumber,
+} from '../middleware/validations'
 
 // Prisma ORM
 const prisma = new PrismaClient()
@@ -20,13 +23,54 @@ const upload = multer({ storage: memoryStorage() })
 const router = express.Router()
 router
     .route('/')
-    .get((req, res) => {})
-    .post(validatePhoneNumber, (req, res) => {
+    .get((req, res) => {
+        const bearerToken = req.headers.authorization
+        if (bearerToken === undefined) {
+            res.sendStatus(401)
+            return
+        }
+        const token = bearerToken?.split(' ')[1]
+
+        token
+            ? jwt.verify(
+                  token,
+                  process.env.JWT_SECRET as Secret,
+                  async (err: any, decoded: any) => {
+                      if (err) {
+                          res.sendStatus(403)
+                          return
+                      }
+
+                      const account = await prisma.account.findUnique({
+                          where: {
+                              id: (decoded as any).id,
+                          },
+                          select: {
+                              id: true,
+                              phone: true,
+                              name: true,
+                              avatar: true,
+                          },
+                      })
+
+                      if (account === null) {
+                          res.sendStatus(404)
+                          return
+                      }
+
+                      res.status(200).json(account)
+                  }
+              )
+            : res.sendStatus(401)
+    })
+    .post(validatePhoneNumber, validatePassword, (req, res) => {
         // Validate request body
         const errors = validationResult(req)
         if (!errors.isEmpty()) {
             // Return a bad request status with the errors
-            return res.status(400).json({ errors: errors.array() })
+            return res.status(400).json({
+                message: errors.array()[0].msg,
+            })
         }
 
         // get phone number, password, name from request body
@@ -50,57 +94,26 @@ router
                 } catch (error: any) {
                     if (error.code === 'P2002')
                         res.status(409).json({
-                            message: 'Phone number already exists',
+                            message: 'Phone number or email already exists',
                         })
                 }
             }
         )
     })
-    .patch(upload.single('image'), async (req, res) => {
-        const file = req.file
+    .patch(validatePhoneNumber, async (req, res) => {
+        const token = req.cookies.token
+        const { id, phone, name, avatar } = req.body
+        console.log(avatar)
 
-        console.log(file?.originalname)
-
-        const { id, phone, password, name } = req.body
-
-        if (file) {
-            // concat current timestamp to file name
-            const fileName = `${Date.now()}-${file.originalname}`
-            const fileRef = ref(storage, 'images/' + fileName)
-            const snapshot = await uploadBytes(fileRef, file.buffer, {
-                contentType: file.mimetype,
-            })
-            const url = await getDownloadURL(snapshot.ref)
-
-            if (password) {
-                // hash password and update
-                bcrypt.hash(
-                    password,
-                    Number(process.env.SALT_ROUNDS),
-                    async function (err, hash) {
-                        // Store hash in your password DB.
-                        try {
-                            const account = await prisma.account.update({
-                                where: {
-                                    id: id,
-                                },
-                                data: {
-                                    phone: phone,
-                                    password: hash,
-                                    name: name,
-                                    avatar: url,
-                                },
-                            })
-                            res.status(202).json(account)
-                        } catch (error: any) {
-                            if (error.code === 'P2002')
-                                res.status(409).json({
-                                    message: 'Phone number already exists',
-                                })
-                        }
-                    }
-                )
-            } else {
+        jwt.verify(
+            token,
+            process.env.JWT_SECRET as Secret,
+            async (err: VerifyErrors | null, decoded: any) => {
+                if (err) {
+                    res.sendStatus(401)
+                    return
+                }
+                const id = (decoded as any).id
                 const account = await prisma.account.update({
                     where: {
                         id: id,
@@ -108,12 +121,14 @@ router
                     data: {
                         phone: phone,
                         name: name,
-                        avatar: url,
+                        ...(avatar && {
+                            avatar: avatar.file.url,
+                        }),
                     },
                 })
                 res.status(202).json(account)
             }
-        }
+        )
     })
     .delete((req, res) => {
         const userId = req.body.id
@@ -131,8 +146,5 @@ router
                 res.status(404).json({ message: 'Account not found' })
             })
     })
-
-// TODO: implement this feature
-// handle forgot password, user submit form with phone number
 
 export default router

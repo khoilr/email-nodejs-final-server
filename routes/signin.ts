@@ -51,13 +51,16 @@ router.post('/', validatePhoneNumber, async (req, res) => {
                       process.env.JWT_SECRET as Secret,
                       { expiresIn: '30 days' },
                       (err, token) => {
-                          if (!err)
-                              res.header('Authorization', `Bearer ${token}`)
-                                  .status(200)
-                                  .json({
-                                      message: 'Login successfully',
-                                  })
-                          else console.log(err.stack)
+                          if (!err) {
+                              res.cookie('token', token, {
+                                  httpOnly: true,
+                                  secure: true,
+                                  sameSite: 'none',
+                              })
+                              res.status(200).json({
+                                  message: 'Login successfully',
+                              })
+                          } else console.log(err.stack)
                       }
                   )
                 : res.status(401).json({ message: 'Wrong password' })

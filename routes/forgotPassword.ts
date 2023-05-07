@@ -2,11 +2,12 @@ import bcrypt from 'bcrypt'
 import { PrismaClient } from '@prisma/client'
 import express from 'express'
 import jwt, { Secret } from 'jsonwebtoken'
-const prisma = new PrismaClient()
 
+const prisma = new PrismaClient()
 const router = express.Router()
+
 router
-    .route('/reset-password')
+    .route('/')
     .post((req, res) => {
         // get user phone and create a token to let user reset password
         const { phone } = req.body
@@ -30,20 +31,7 @@ router
                     { expiresIn: '1 day' }
                 )
 
-                // send token to user phone number
-                // const client = require('twilio')(
-                //     process.env.TWILIO_ACCOUNT_SID,
-                //     process.env.TWILIO_AUTH_TOKEN
-                // )
-
-                // client.messages
-                //     .create({
-                //         body: `Your reset password token is ${token}`,
-                //         from: process.env.TWILIO_PHONE_NUMBER,
-                //         to: phone,
-                //     })
-                //     .then((message) => console.log(message.sid))
-
+                // async..await is not allowed in global scope, must use a wrapper
                 res.status(200).json({ message: 'Reset password token sent' })
             })
             .catch((error) => {

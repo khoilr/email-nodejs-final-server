@@ -53,15 +53,27 @@ isSupported().then((isSupported) => {
 import accountRoute from './routes/account'
 import messageRoute from './routes/message'
 import signinRoute from './routes/signin'
+import signoutRoute from './routes/signout'
+import uploadRoute from './routes/upload'
+import draftRoute from './routes/draft'
+import changePasswordRoute from './routes/changePassword'
 import forgotPasswordRoute from './routes/forgotPassword'
-app.use('/auth', accountRoute)
+import emailRoute from './routes/email'
+import recipientRoute from './routes/recipient'
+app.use('/account', accountRoute)
 app.use('/message', messageRoute)
 app.use('/signin', signinRoute)
+app.use('/signout', signoutRoute)
+app.use('/upload', uploadRoute)
+app.use('/draft', draftRoute)
+app.use('/change-password', changePasswordRoute)
 app.use('/forgot-password', forgotPasswordRoute)
+app.use('/email', emailRoute)
+app.use('/recipient', recipientRoute)
 
-// import route from routes/auth and use it
-import sendEmail from './routes/Email'
-app.use('/send', sendEmail)
+// // import route from routes/auth and use it
+// import sendEmail from './routes/email'
+// app.use('/send', sendEmail)
 
 // error handler
 app.use((err: any, req: Request, res: Response, next: any) => {

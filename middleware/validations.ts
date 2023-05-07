@@ -13,4 +13,26 @@ const validatePhoneNumber = body('phone')
     .matches(/^0/)
     .withMessage('Phone number must begin with 0')
 
-export { validatePhoneNumber }
+    // Phone number must be numeric
+    .isNumeric()
+    .withMessage('Phone number must be numeric')
+
+const validatePassword = body('password')
+    // Password must exist
+    .exists({ checkFalsy: true })
+    .withMessage('Password is required')
+
+    // Password must have at least 6 characters
+    .isLength({ min: 6 })
+    .withMessage('Password must have at least 6 characters')
+
+const validateNewPassword = body('newPassword')
+    // Password must exist
+    .exists({ checkFalsy: true })
+    .withMessage('Password is required')
+
+    // Password must have at least 6 characters
+    .isLength({ min: 6 })
+    .withMessage('Password must have at least 6 characters')
+
+export { validatePhoneNumber, validatePassword, validateNewPassword }
